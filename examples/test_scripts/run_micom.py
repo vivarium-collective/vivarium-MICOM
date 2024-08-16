@@ -1,42 +1,47 @@
 """Extract minimal growth media and growth rates."""
-
+import os
 import pandas as pd
 import micom
 from micom import load_pickle
 from micom.media import minimal_medium
-from micom.workflows import workflow
 from micom.logger import logger
 
+#%%
 
-logger = micom.logger.logger
-try:
-    max_procs = snakemake.threads
-except NameError:
-    max_procs = 20
+path_data = os.path.join(os.getenv("HOME"),'projects','micom_validation','paper','data')
 
-@profile
-def media_and_gcs(sam):
-    com = load_pickle("data/models/" + sam + ".pickle")
+path_model = os.path.join(os.getcwd(),'models')
+
+path_output = os.path.join(os.getcwd(),'data')
+
+if not os.path.exists(path_output):
+    os.mkdir(path_output)
+
+#%%
+
+# @profile
+def media_and_gcs(sample_id):
+    com = load_pickle("models/" + sample_id + ".pickle")
 
     # Get growth rates
     try:
         sol = com.cooperative_tradeoff(fraction=0.5)
         rates = sol.members["growth_rate"].copy()
         rates["community"] = sol.growth_rate
-        rates.name = sam
+        rates.name = sample_id
     except Exception:
-        logger.warning("Could not solve cooperative tradeoff for %s." % sam)
+        logger.warning("Could not solve cooperative tradeoff for %s." % sample_id)
         return None
 
     # Get the minimal medium
     med = minimal_medium(com, 0.95 * sol.growth_rate, exports=True)
-    med.name = sam
+    med.name = sample_id
 
     # Apply medium and reoptimize
     com.medium = med[med > 0]
     sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
     fluxes = sol.fluxes
-    fluxes["sample"] = sam
+    fluxes["sample"] = sample_id
     return {"medium": med, "gcs": rates, "fluxes": fluxes}
 
 
@@ -44,9 +49,47 @@ def media_and_gcs(sam):
 # gcs = pd.DataFrame()
 # media = pd.DataFrame()
 # fluxes = pd.DataFrame()
+
+#%%
+
+samples = pd.read_csv(os.path.join(path_data,"recent.csv"))
+samples_subset = samples.run_accession.values
+samples_subset.sort()
+samples_subset = samples_subset[:5]
+
+#%%
+
+results = []
+
+for sample in samples_subset:
+    result_sample = media_and_gcs(sample)
+    results.append(result_sample)
+
+#%%
+gcs = pd.DataFrame()
+media = pd.DataFrame()
+fluxes = pd.DataFrame()
+for r in results:
+    # gcs = gcs.concat(r["gcs"])
+    gcs = pd.concat([gcs, r["gcs"]], axis=1)
+    # media = media.concat(r["medium"])
+    media = pd.concat([media, r["medium"]], axis=1)
+    # fluxes = fluxes.concat(r["fluxes"])
+    fluxes = pd.concat([fluxes, r["fluxes"]], axis=0)
+
+# fluxes = fluxes.transpose()
+fluxes["compartment"] = list(fluxes.index)
+
+#%%
+
+gcs.transpose().to_csv("data/growth_rates.csv")
+media.transpose().to_csv("data/minimal_imports.csv")
+fluxes.to_csv("data/minimal_fluxes.csv.gz", compression="gzip")
+
+
 #%%
 # results = workflow(media_and_gcs, samples.run_accession, max_procs)
-result_000 = media_and_gcs('ERR260134')
+# result = media_and_gcs('ERR260134_0')
 
 #%%
 #

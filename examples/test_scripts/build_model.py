@@ -9,7 +9,6 @@ from micom.workflows import workflow
 
 import os
 
-
 #%%
 # wd_default = os.path.dirname(os.getcwd())
 #
@@ -68,12 +67,14 @@ args = [(s, taxonomy[taxonomy.samples == s]) for s in samples]
 
 #%% load the first patient sample
 
-sample_0 = samples[0]
+for sam_idx in range(5):
+    sample_0 = samples[sam_idx]
 
-# define input to build function with fist 5 genera of first patient sample
+    # define input to build function with fist 5 genera of first patient sample
 
-args_0 = (str(sample_0)+'_0', taxonomy[taxonomy.samples == samples[0]].iloc[:5,:])
+    args_0 = (str(sample_0), taxonomy[taxonomy.samples == samples[0]].iloc[:5,:])
 
-#%% build micom toy model
+    # build micom toy model
 
-build_and_save(args_0)
+    build_and_save(args_0)
+#%%
