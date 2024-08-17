@@ -53,9 +53,8 @@ def media_and_gcs(sample_id):
 #%%
 
 samples = pd.read_csv(os.path.join(path_data,"recent.csv"))
-samples_subset = samples.run_accession.values
-samples_subset.sort()
-samples_subset = samples_subset[:5]
+samples_subset = ['ERR260134','ERR260138','ERR260165','ERR260172','ERR260180']
+
 
 #%%
 
@@ -82,48 +81,7 @@ fluxes["compartment"] = list(fluxes.index)
 
 #%%
 
-gcs.transpose().to_csv("data/growth_rates.csv")
-media.transpose().to_csv("data/minimal_imports.csv")
-fluxes.to_csv("data/minimal_fluxes.csv.gz", compression="gzip")
+gcs.transpose().to_csv(os.path.join(path_output,"growth_rates.csv"))
+media.transpose().to_csv(os.path.join(path_output,"minimal_imports.csv"))
+fluxes.to_csv(os.path.join(path_output,"minimal_fluxes.csv.gz"), compression="gzip")
 
-
-#%%
-# results = workflow(media_and_gcs, samples.run_accession, max_procs)
-# result = media_and_gcs('ERR260134_0')
-
-#%%
-#
-# gcs_000 = result_000["gcs"]
-# media_000 = result_000["medium"]
-# fluxes_000 = result_000["fluxes"]
-
-
-#%%
-#
-# gcs_paper = pd.read_csv("data/growth_rates.csv",sep=',',index_col=0,header=0)
-
-#%%
-#
-# gcs_compare = pd.DataFrame(index=gcs_paper.columns)
-#
-# gcs_compare['paper'] = gcs_paper.loc['ERR260134'].values
-#
-# gcs_compare['reproduced'] = np.ones(len(gcs_compare['paper'].values))*np.nan
-#
-# for genus in gcs_000.index:
-#     gcs_compare.loc[genus,'reproduced'] = gcs_000[genus]
-#
-# gcs_compare = gcs_compare.dropna(axis=0)
-#
-# gcs_compare['ratio'] = gcs_compare['reproduced'].values/gcs_compare['paper'].values
-
-#%%
-
-# for r in results:
-#     gcs = gcs.append(r["gcs"])
-#     media = media.append(r["medium"])
-#     fluxes = fluxes.append(r["fluxes"])
-#
-# gcs.to_csv("data/growth_rates.csv")
-# media.to_csv("data/minimal_imports.csv")
-# fluxes.to_csv("data/minimal_fluxes.csv.gz", compression="gzip")

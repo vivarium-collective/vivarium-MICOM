@@ -72,7 +72,7 @@ for sam_idx in range(5):
 
     # define input to build function with fist 5 genera of first patient sample
 
-    args_0 = (str(sample_0), taxonomy[taxonomy.samples == samples[0]].iloc[:5,:])
+    args_0 = (str(sample_0), taxonomy[taxonomy.samples == sample_0].iloc[:5,:])
 
     # build micom toy model
 
