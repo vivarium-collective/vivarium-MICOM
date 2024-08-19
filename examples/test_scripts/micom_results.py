@@ -27,12 +27,12 @@ path_model = os.path.join(os.getcwd(),'models')
 
 path_output = os.path.join(os.getcwd(),'data')
 
-samples_subset = ['ERR260134','ERR260138','ERR260165','ERR260172','ERR260180']
+# samples_subset = ['ERR260134','ERR260138','ERR260165','ERR260172','ERR260180']
 
 #%%
 fluxes = pd.read_csv("data/minimal_fluxes.csv.gz", compression="gzip")
 
-#%%
+
 
 fluxes_default = fluxes
 
@@ -53,8 +53,14 @@ fluxes["name"] = fluxes.compartment.str.replace("_", " ")
 samples = pd.read_csv(os.path.join(path_data,"recent.csv"))[
     ["run_accession", "status", "subset", "type"]
 ]
+
+samples_subset = samples.run_accession.values
+samples_subset.sort()
+samples_subset = samples_subset[:5]
+
 samples = samples.rename(columns={"run_accession": "sample"})
 samples.index = samples["sample"]
+
 samples = samples.loc[samples_subset]
 
 #%%

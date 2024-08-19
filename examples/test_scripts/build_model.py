@@ -61,6 +61,7 @@ def build_and_save(args):
 
 
 samples = taxonomy.samples.unique()
+samples.sort()
 args = [(s, taxonomy[taxonomy.samples == s]) for s in samples]
 
 

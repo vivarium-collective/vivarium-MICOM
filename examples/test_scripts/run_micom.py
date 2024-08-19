@@ -39,7 +39,7 @@ def media_and_gcs(sample_id):
 
     # Apply medium and reoptimize
     com.medium = med[med > 0]
-    sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
+    sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=True)
     fluxes = sol.fluxes
     fluxes["sample"] = sample_id
     return {"medium": med, "gcs": rates, "fluxes": fluxes}
@@ -53,7 +53,9 @@ def media_and_gcs(sample_id):
 #%%
 
 samples = pd.read_csv(os.path.join(path_data,"recent.csv"))
-samples_subset = ['ERR260134','ERR260138','ERR260165','ERR260172','ERR260180']
+samples_subset = samples.run_accession.values
+samples_subset.sort()
+samples_subset = samples_subset[:5]
 
 
 #%%

@@ -5,14 +5,22 @@ import numpy as np
 from vivarium.core.process import Process
 from vivarium.core.engine import Engine
 
+## from MICOM import ....  # TODO all required MICOM imports
 
-# from MICOM import ....  # TODO all required MICOM imports
+import os
+import pandas as pd
+import micom
+from micom import load_pickle
+from micom.media import minimal_medium
+from micom.logger import logger
 
 
+##
 class MICOM(Process):
 
     # defaults describes the parameters that the process expects
     defaults = {
+        'patient_model': 'ERR260132'
         'species_files': None,
     }
 
@@ -70,8 +78,15 @@ class MICOM(Process):
         # run MICOM
         # TODO
 
+        com.medium = med[med > 0]
+        sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
+        fluxes = sol.fluxes
+
         # extract results
-        results = {}
+        results['fluxes'] = fluxes
+        results['media'] = com.medium
+        results['growth_rates'] = sol.members["growth_rate"].copy()
+        results['community_growth_rate'] = sol.growth_rate
 
         return {
             # 'media': results['media'],
