@@ -14,6 +14,18 @@ from micom import load_pickle
 from micom.media import minimal_medium
 from micom.logger import logger
 
+#%% temp - micom model test bench
+
+sample_id = 'ERR260132'
+
+com = load_pickle("models/" + sample_id + ".pickle")
+
+#%%
+
+
+
+
+#%%
 
 ##
 class MICOM(Process):
@@ -29,11 +41,14 @@ class MICOM(Process):
         # in the constructor we initialize all MICOM processes
 
         # load the species files
+        self.com = load_pickle('models/'+str(self.parameters['patient_model'])+'.pkl')
         self.parameters['species_files']
-        self.species_ids = []  # list of species ids
-
+        self.species_ids = list(self.com.taxonomy['id'])  # list of species ids
+        self.exchanges = [exc.id for exc in self.com.exchanges]
+        self.internal_exchanges = [iexc.id for iexc in self.com.internal_exchanges]
+        self.reactions = [rxn.id for rxn in self.com.reactions]
         # get minimal media
-        self.media_molecules = []  # list of media molecules
+        self.media_molecules = list(self.com.medium.keys())  # list of media molecules
 
         # put asserts here to make sure all the relevant information is loaded
         assert self.parameters['species_files'] is not None, 'species_files must be provided'
@@ -42,7 +57,7 @@ class MICOM(Process):
         ports = {
             'media': {  # media is the port name
                 mol_id: {
-                    '_default': np.array(),  # dic from nutrient id to concentrations
+                    '_default': 0.0,  # dic from nutrient id to concentrations
                     '_updater': 'set',  # how the port is updated
                     '_emit': True,  # whether the port is emitted
                     # '_serializer': 'json',  # how the port is serialized
@@ -51,24 +66,36 @@ class MICOM(Process):
             },
             'exchange_bounds': {},
             'species_abundance': {
-                species_id: {
+                str(species_id): {
                     '_default': 0.0,
                     '_updater': 'set',
                     '_emit': True,
                 } for species_id in self.species_ids
-            },
+            },'growth_rates': {
+                str(species_id):{
+                '_default': 0.0,
+                '_updater': 'set',
+                '_emit': True,
+            } for species_id in self.com.abundances.index
+        },
             'community_growth_rate': {
                 '_default': 0.0,
                 '_updater': 'set',
                 '_emit': True,
             },
-            'exchange fluxes': {},
+            'fluxes': {
+                str(rxn): {
+                    '_default': 0.0,  # dic from nutrient id to concentrations
+                    '_updater': 'set',  # how the port is updated
+                    '_emit': True  # whether the port is emitted
+                } for rxn in self.reactions
+            },
         }
         return ports
 
     def next_update(self, interval, states):
         # get the media concentrations
-        media = states['media']
+        media_input = states['media']
 
         # get the species abundance
         species_abundance = states['species_abundance']
@@ -78,22 +105,30 @@ class MICOM(Process):
         # run MICOM
         # TODO
 
-        com.medium = med[med > 0]
+        com.medium = media_input[media_input > 0]
         sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
-        fluxes = sol.fluxes
+        fluxes_sol = sol.fluxes
 
-        # extract results
-        results['fluxes'] = fluxes
-        results['media'] = com.medium
-        results['growth_rates'] = sol.members["growth_rate"].copy()
-        results['community_growth_rate'] = sol.growth_rate
+        fluxes = {}
+
+        for rxn in self.reactions:
+            flux_search = rxn.split('__')
+            if len(flux_search) == 2:
+                fluxes[rxn] = fluxes_sol.loc[flux_search[1],flux_search[0]]
+            elif len(flux_search) == 1:
+                fluxes[rxn] = fluxes_sol.loc['medium',rxn]
+
+        growth_rates = {
+            str(species_id):
+                sol.members["growth_rate"][str(species_id)]
+            for species_id in self.species_ids
+        }
+
 
         return {
-            # 'media': results['media'],
-            'species_abundance': results['species_abundance'],
-            'community_growth_rate': results['community_growth_rate'],
-            'exchange fluxes': results['exchange fluxes'],
-            # 'results': results,
+            'growth_rates': growth_rates,
+            'community_growth_rate': sol.growth_rate,
+            'fluxes': fluxes
         }
 
 
