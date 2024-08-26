@@ -150,6 +150,7 @@ class media_update(Process):
         'patient_model': 'ERR260132',
         'v_max': 1.0,
         'k_m': 0.0,
+        'timestep': 1.0,
     }
 
     def __init__(self,parameters=None):
@@ -177,15 +178,13 @@ class media_update(Process):
         media_input = states['media']
 
         # media_update = np.array(list(media_input.values()))*self.parameters['v_max']/(self.parameters['k_m']+np.array(list(media_input.values())))
-        media_output = media_input.copy()
+        media_update = media_input.copy()
 
         for mol_id in self.media_molecules:
-            media_output[mol_id] = media_input[mol_id]*self.parameters['v_max']/(self.parameters['k_m']+media_input[mol_id])
+            media_update[mol_id] = media_input[mol_id]*self.parameters['v_max']/(self.parameters['k_m']+media_input[mol_id]) * self.parameters['timestep']
 
         return {
-            'media': {
-                media_output
-            }
+            'media': media_update
         }
 
 def run_process(total_time=5):
