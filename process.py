@@ -148,7 +148,7 @@ class MICOM(Process):
 class media_update(Process):
     defaults = {
         'patient_model': 'ERR260132',
-        'v_max': 1.0,
+        'v_max': 1000.0,
         'k_m': 0.0,
         'timestep': 1.0,
     }
@@ -227,10 +227,13 @@ def run_process(total_time=5):
 
     print(data)
 
+    return sim
+
 
 
 if __name__ == '__main__':
-    run_process()
+    results = run_process()
+    data = results.emitter.get_data()
 
 #%%
 # config = {
