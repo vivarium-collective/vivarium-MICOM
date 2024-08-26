@@ -59,7 +59,7 @@ class MICOM(Process):
             'media': {  # media is the port name
                 mol_id: {
                     '_default': 1000.0,  # dic from nutrient id to concentrations
-                    '_updater': 'set',  # how the port is updated
+                    '_updater': 'accumulate',  # how the port is updated
                     '_emit': True,  # whether the port is emitted
                     # '_serializer': 'json',  # how the port is serialized
                     # '_divider': 'split',
@@ -148,8 +148,8 @@ class MICOM(Process):
 class media_update(Process):
     defaults = {
         'patient_model': 'ERR260132',
-        'v_max': 1000.0,
-        'k_m': 0.0,
+        'v_max': 10.0,
+        'k_m': 10.0,
         'timestep': 1.0,
     }
 
@@ -165,7 +165,7 @@ class media_update(Process):
             'media': {
                 mol_id: {
                     '_default': 1000.0,
-                    '_updater': 'set',
+                    '_updater': 'accumulate',
                     '_emit': True,
                 } for mol_id in self.media_molecules
             }
@@ -177,11 +177,12 @@ class media_update(Process):
 
         media_input = states['media']
 
-        # media_update = np.array(list(media_input.values()))*self.parameters['v_max']/(self.parameters['k_m']+np.array(list(media_input.values())))
         media_update = media_input.copy()
 
         for mol_id in self.media_molecules:
-            media_update[mol_id] = media_input[mol_id]*self.parameters['v_max']/(self.parameters['k_m']+media_input[mol_id]) * self.parameters['timestep']
+            media_update[mol_id] = - (media_input[mol_id]*self.parameters['v_max']
+                                    /(self.parameters['k_m']+media_input[mol_id])
+                                    * self.parameters['timestep'])
 
         return {
             'media': media_update
@@ -232,7 +233,7 @@ def run_process(total_time=5):
 
 
 if __name__ == '__main__':
-    results = run_process()
+    results = run_process(total_time=20)
     data = results.emitter.get_data()
 
 #%%
@@ -257,4 +258,52 @@ if __name__ == '__main__':
 #
 # # run the simulation
 # sim.update(5)
+#%%
+media_xmpl = np.array([data[tp]['media_store']['EX_nmn_m'] for tp in list(data.keys())])
+
+
+
+
+#%%
+
+import matplotlib.pyplot as plt
+
+plt.plot(range(len(media_xmpl)),media_xmpl)
+
+plt.show()
+
+#%%
+
+SCFAs = {
+    "butyrate": 'EX_but\S*(eS*)',
+    "acetate": 'EX_ac\S*(eS*)',
+    "propionate": 'EX_ppa\S*(eS*)',
+}
+#%%
+
+rxn_butyrate =  list(filter(re.compile(SCFAs["butyrate"]).match, list(data[0]['fluxes_store'].keys())))
+rxn_acetate =  list(filter(re.compile(SCFAs["acetate"]).match, list(data[0]['fluxes_store'].keys())))
+rxn_propionate =  list(filter(re.compile(SCFAs["propionate"]).match, list(data[0]['fluxes_store'].keys())))
+
+#%%
+def traj_group(rxns):
+    plt.figure()
+    for rxn in rxns:
+        traj = np.array([data[tp]['fluxes_store'][rxn] for tp in list(data.keys())])
+        plt.plot(range(len(traj)),traj,label=rxn)
+    # plt.legend()
+    plt.show()
+
+
+
+#%%
+
+traj_group(rxn_butyrate)
+traj_group(rxn_acetate)
+traj_group(rxn_propionate)
+#%%
+
+
+
+
 #%%
