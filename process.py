@@ -47,6 +47,7 @@ class MICOM(Process):
         self.exchanges = [exc.id for exc in self.com.exchanges]
         self.internal_exchanges = [iexc.id for iexc in self.com.internal_exchanges]
         self.reactions = [rxn.id for rxn in self.com.reactions]
+        self.reactions = list(filter(lambda x: 'biomass(e)' not in x, self.reactions))
         # get minimal media
         self.media_molecules = list(self.com.medium.keys())  # list of media molecules
 
