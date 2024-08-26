@@ -103,9 +103,9 @@ class MICOM(Process):
         # species_abundance = states['species_abundance']
 
         # set the values in MICOM
+        # TODO
 
         # run MICOM
-        # TODO
 
         self.com.medium = media_input
         sol = self.com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
@@ -146,20 +146,24 @@ class MICOM(Process):
 
 
 class media_update(Process):
-    defaults = {}
+    defaults = {
+        'patient_model': 'ERR260132',
+        'v_max': 1.0,
+        'k_m': 0.0,
+    }
 
     def __init__(self,parameters=None):
 
         super().__init__(parameters)
 
-        self.com = load_pickle('models/'+str(self.parameters['patient_model'])+'.pkl')
+        self.com = load_pickle('models/'+str(self.parameters['patient_model'])+'.pickle')
         self.media_molecules = list(self.com.medium.keys())
 
     def ports_schema(self):
         ports = {
             'media': {
                 mol_id: {
-                    '_default': 0.0,
+                    '_default': 1000.0,
                     '_updater': 'set',
                     '_emit': True,
                 } for mol_id in self.media_molecules
@@ -172,10 +176,11 @@ class media_update(Process):
 
         media_input = states['media']
 
-        v_max = 1.00
-        k_m = 1.00
+        # media_update = np.array(list(media_input.values()))*self.parameters['v_max']/(self.parameters['k_m']+np.array(list(media_input.values())))
+        media_output = media_input.copy()
 
-        media_output = media_input.values*v_max/(k_m+media_input.values)
+        for mol_id in self.media_molecules:
+            media_output[mol_id] = media_input[mol_id]*self.parameters['v_max']/(self.parameters['k_m']+media_input[mol_id])
 
         return {
             'media': {
@@ -191,10 +196,12 @@ def run_process(total_time=5):
     }
     # create a MICOM process
     micom_process = MICOM(config)
+    media_process = media_update({})
 
     # define the composite
     processes = {
         'micom': micom_process,
+        'media': media_process,
     }
     topology = {
         'micom': {
@@ -204,6 +211,9 @@ def run_process(total_time=5):
             #     'media': ('media', 'micom'),
         #     'species_abundance': ('species_abundance', 'micom'),
         #     'community_growth_rate': ('community_growth_rate', 'micom'),
+        },
+        'media': {
+            'media': ('media_store',),
         }
     }
 
