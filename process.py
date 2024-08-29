@@ -5,7 +5,6 @@ import numpy as np
 from vivarium.core.process import Process
 from vivarium.core.engine import Engine
 
-## from MICOM import ....  # TODO all required MICOM imports
 
 import os
 import pandas as pd
@@ -13,42 +12,30 @@ import micom
 from micom import load_pickle
 from micom.media import minimal_medium
 from micom.logger import logger
+import pickle
 
-#%% temp - micom model test bench
-
-# sample_id = 'ERR260132'
-#
-# com = load_pickle('models/' + sample_id + '.pickle')
-
-#%%
 
 
 
 
 #%%
 
-##
 class MICOM(Process):
 
-    # defaults describes the parameters that the process expects
     defaults = {
-        'patient_model': 'ERR260132',
-        'species_files': None,
+        'patient_model': 'ERR260132', # sample id for the first patient in models/
     }
 
     def __init__(self, parameters=None):
         super().__init__(parameters)
-        # in the constructor we initialize all MICOM processes
 
-        # load the species files
-        self.com = load_pickle('models/'+str(self.parameters['patient_model'])+'.pickle')
-        #self.parameters['species_files']
+        self.com = load_pickle('models/'+str(self.parameters['patient_model'])+'.pickle') # loads the patient community model
+
         self.species_ids = list(self.com.taxonomy['id'])  # list of species ids
         self.exchanges = [exc.id for exc in self.com.exchanges]
         self.internal_exchanges = [iexc.id for iexc in self.com.internal_exchanges]
-        self.reactions = [rxn.id for rxn in self.com.reactions] #retrieve reaction ids to save flux outputs
-        self.reactions = list(filter(lambda x: 'biomass(e)' not in x, self.reactions))
-        # get minimal media
+        self.reactions = [rxn.id for rxn in self.com.reactions] # retrieve reaction ids to save flux outputs
+        self.reactions = list(filter(lambda x: 'biomass(e)' not in x, self.reactions)) # remove the reaction id not included in fluxes output
         self.media_molecules = list(self.com.medium.keys())  # list of media molecules
 
         # put asserts here to make sure all the relevant information is loaded
@@ -56,7 +43,7 @@ class MICOM(Process):
 
     def ports_schema(self):
         ports = {
-            'media': {  # media is the port name
+            'media': {  # common port shared by MICOM and MediaUpdate processes
                 mol_id: {
                     '_default': 1000.0,  # dic from nutrient id to concentrations
                     '_updater': 'accumulate',  # how the port is updated
@@ -110,9 +97,10 @@ class MICOM(Process):
         self.com.medium = media_input
         sol = self.com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
         fluxes_sol = sol.fluxes
+
         # update fluxes port from micom output
         fluxes = {}
-
+        # restructure fluxes info from pandas dataframe into linear dict
         for rxn in self.reactions:
 
             rxn_spc = list(filter(lambda x: x in rxn,self.species_ids))
@@ -125,11 +113,7 @@ class MICOM(Process):
             else:
                 fluxes[rxn] = fluxes_sol.loc['medium',rxn]
 
-            # flux_search = rxn.split('__')
-            # if len(flux_search) == 2:
-            #     fluxes[rxn] = fluxes_sol.loc[flux_search[1],flux_search[0]]
-            # elif len(flux_search) == 1:
-            #     fluxes[rxn] = fluxes_sol.loc['medium',rxn]
+
 
         # growth_rates = {
         #     str(species_id):
@@ -147,7 +131,7 @@ class MICOM(Process):
 
 class MediaUpdate(Process):
     defaults = {
-        'patient_model': 'ERR260132',
+        'patient_model': 'ERR260132', # sample id for the first patient in models/
         'v_max': 10.0,
         'k_m': 10.0,
         'timestep': 1.0,
@@ -162,7 +146,7 @@ class MediaUpdate(Process):
 
     def ports_schema(self):
         ports = {
-            'media': {
+            'media': { # common port shared by MICOM and MediaUpdate processes
                 mol_id: {
                     '_default': 1000.0,
                     '_updater': 'accumulate',
@@ -180,6 +164,7 @@ class MediaUpdate(Process):
         media_update = media_input.copy()
 
         for mol_id in self.media_molecules:
+            # define the amount ot media components consumed at each time step
             media_update[mol_id] = - (media_input[mol_id]*self.parameters['v_max']
                                     /(self.parameters['k_m']+media_input[mol_id])
                                     * self.parameters['timestep'])
@@ -233,8 +218,11 @@ def run_process(total_time=5):
 
 
 if __name__ == '__main__':
-    results = run_process(total_time=20)
-    data = results.emitter.get_data()
+    results = run_process(total_time=20) # performs a test run with 20 time steps
+    data = results.emitter.get_data() # retrieve outputs from vivarium engine
+    os.makedirs('out',exist_ok=True)
+    with(open(os.path.join('out','test_output.pickle'))) as f:
+        pickle.dump(data,f) # save output to disk
 
 #%%
 # config = {
@@ -266,11 +254,11 @@ media_xmpl = np.array([data[tp]['media_store']['EX_nmn_m'] for tp in list(data.k
 
 #%%
 
-import matplotlib.pyplot as plt
-
-plt.plot(range(len(media_xmpl)),media_xmpl)
-
-plt.show()
+# import matplotlib.pyplot as plt
+#
+# plt.plot(range(len(media_xmpl)),media_xmpl)
+#
+# plt.show()
 
 #%%
 
