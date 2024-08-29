@@ -46,7 +46,7 @@ class MICOM(Process):
         self.species_ids = list(self.com.taxonomy['id'])  # list of species ids
         self.exchanges = [exc.id for exc in self.com.exchanges]
         self.internal_exchanges = [iexc.id for iexc in self.com.internal_exchanges]
-        self.reactions = [rxn.id for rxn in self.com.reactions]
+        self.reactions = [rxn.id for rxn in self.com.reactions] #retrieve reaction ids to save flux outputs
         self.reactions = list(filter(lambda x: 'biomass(e)' not in x, self.reactions))
         # get minimal media
         self.media_molecules = list(self.com.medium.keys())  # list of media molecules
@@ -110,7 +110,7 @@ class MICOM(Process):
         self.com.medium = media_input
         sol = self.com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
         fluxes_sol = sol.fluxes
-
+        # update fluxes port from micom output
         fluxes = {}
 
         for rxn in self.reactions:
@@ -145,7 +145,7 @@ class MICOM(Process):
         }
 
 
-class media_update(Process):
+class MediaUpdate(Process):
     defaults = {
         'patient_model': 'ERR260132',
         'v_max': 10.0,
@@ -196,7 +196,7 @@ def run_process(total_time=5):
     }
     # create a MICOM process
     micom_process = MICOM(config)
-    media_process = media_update({})
+    media_process = MediaUpdate({})
 
     # define the composite
     processes = {
