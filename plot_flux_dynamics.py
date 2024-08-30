@@ -17,7 +17,7 @@ SCFAs = {
 }
 #%% load test simulation data and retrieve SCFAs
 
-data = pickle.load(open(os.path.join('out','test_output.pickle')))
+data = pickle.load(open(os.path.join('out','test_output.pickle'),'rb'))
 rxn_butyrate =  list(filter(re.compile(SCFAs["butyrate"]).match, list(data[0]['fluxes_store'].keys())))
 rxn_acetate =  list(filter(re.compile(SCFAs["acetate"]).match, list(data[0]['fluxes_store'].keys())))
 rxn_propionate =  list(filter(re.compile(SCFAs["propionate"]).match, list(data[0]['fluxes_store'].keys())))

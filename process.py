@@ -221,6 +221,6 @@ if __name__ == '__main__':
     results = run_process(total_time=20) # performs a test run with 20 time steps
     data = results.emitter.get_data() # retrieve outputs from vivarium engine
     os.makedirs('out',exist_ok=True)
-    with(open(os.path.join('out','test_output.pickle'))) as f:
-        pickle.dump(data,f) # save output to disk
+    with(open(os.path.join(os.getcwd(),'out','test_output.pickle'),"wb")) as f:
+        pickle.dump(data,f) # save output to disks
 

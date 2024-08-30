@@ -8,7 +8,7 @@ import pandas as pd
 import os
 
 #%%
-wd_default = os.path.dirname(os.getcwd())
+wd_default = os.path.dirname(os.path.dirname(os.getcwd()))
 
 os.chdir(wd_default)
 print(wd_default)
