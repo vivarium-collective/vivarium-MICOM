@@ -1,0 +1,34 @@
+Wrote profile results to media_and_gcs_test.py.lprof
+Timer unit: 1e-06 s
+
+Total time: 624.806 s
+File: media_and_gcs_test.py
+Function: media_and_gcs at line 17
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    17                                           @profile
+    18                                           def media_and_gcs(sam):
+    19         1   15095875.2    2e+07      2.4      com = load_pickle("data/models/" + sam + ".pickle")
+    20                                           
+    21                                               # Get growth rates
+    22         1          0.3      0.3      0.0      try:
+    23         1  218146992.2    2e+08     34.9          sol = com.cooperative_tradeoff(fraction=0.5)
+    24         1        237.8    237.8      0.0          rates = sol.members["growth_rate"].copy()
+    25         1        812.5    812.5      0.0          rates["community"] = sol.growth_rate
+    26         1          6.8      6.8      0.0          rates.name = sam
+    27                                               except Exception:
+    28                                                   logger.warning("Could not solve cooperative tradeoff for %s." % sam)
+    29                                                   return None
+    30                                           
+    31                                               # Get the minimal medium
+    32         1   15933334.6    2e+07      2.6      med = minimal_medium(com, 0.95 * sol.growth_rate, exports=True)
+    33         1          8.2      8.2      0.0      med.name = sam
+    34                                           
+    35                                               # Apply medium and reoptimize
+    36         1    2409524.4    2e+06      0.4      com.medium = med[med > 0]
+    37         1  373218352.1    4e+08     59.7      sol = com.cooperative_tradeoff(fraction=0.5, fluxes=True, pfba=False)
+    38         1          0.6      0.6      0.0      fluxes = sol.fluxes
+    39         1        594.6    594.6      0.0      fluxes["sample"] = sam
+    40         1          0.6      0.6      0.0      return {"medium": med, "gcs": rates, "fluxes": fluxes}
+
